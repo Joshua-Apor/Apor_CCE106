@@ -4,152 +4,81 @@ import {
   SafeAreaView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native";
 
-type Operation = "Add" | "Subtract" | "Multiply" | "Divide";
+const INCREMENT = 1;
 
 export default function HomeScreen() {
-  const [firstNumber, setFirstNumber] = useState("");
-  const [secondNumber, setSecondNumber] = useState("");
-  const [result, setResult] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [count, setCount] = useState(0);
 
-  const calculate = (operation: Operation) => {
-    const first = Number(firstNumber);
-    const second = Number(secondNumber);
+  const increaseCount = () =>
+    setCount((currentCount) => currentCount + INCREMENT);
 
-    // Validate empty or invalid input
-    if (
-      firstNumber.trim() === "" ||
-      secondNumber.trim() === "" ||
-      !Number.isFinite(first) ||
-      !Number.isFinite(second)
-    ) {
-      setResult(null);
-      setError("Enter valid numbers in both fields.");
-      return;
-    }
+  const decreaseCount = () =>
+    setCount((currentCount) =>
+      Math.max(0, currentCount - INCREMENT),
+    );
 
-    // Prevent division by zero
-    if (operation === "Divide" && second === 0) {
-      setResult(null);
-      setError("Cannot divide by zero.");
-      return;
-    }
-
-    const values: Record<Operation, number> = {
-      Add: first + second,
-      Subtract: first - second,
-      Multiply: first * second,
-      Divide: first / second,
-    };
-
-    setError(null);
-    setResult(String(values[operation]));
-  };
-
-  const clearCalculator = () => {
-    setFirstNumber("");
-    setSecondNumber("");
-    setResult(null);
-    setError(null);
-  };
+  const resetCount = () => setCount(0);
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        <Text style={styles.title}>Simple Calculator</Text>
 
-        <View style={styles.card}>
-          <Text style={styles.label}>FIRST NUMBER</Text>
+        {/* Counter Value */}
+        <Text
+          accessibilityLiveRegion="polite"
+          style={styles.count}
+        >
+          {count}
+        </Text>
 
-          <TextInput
-            keyboardType="decimal-pad"
-            onChangeText={setFirstNumber}
-            placeholder="Enter first number"
-            placeholderTextColor="#888"
-            style={styles.input}
-            value={firstNumber}
-          />
-
-          <Text style={styles.label}>SECOND NUMBER</Text>
-
-          <TextInput
-            keyboardType="decimal-pad"
-            onChangeText={setSecondNumber}
-            placeholder="Enter second number"
-            placeholderTextColor="#888"
-            style={styles.input}
-            value={secondNumber}
-          />
-
-          {/* Operation Buttons */}
-          <View style={styles.buttonGrid}>
-            <Pressable
-              style={({ pressed }) => [
-                styles.operationButton,
-                pressed && styles.buttonPressed,
-              ]}
-              onPress={() => calculate("Add")}
-            >
-              <Text style={styles.operationText}>+</Text>
-            </Pressable>
-
-            <Pressable
-              style={({ pressed }) => [
-                styles.operationButton,
-                pressed && styles.buttonPressed,
-              ]}
-              onPress={() => calculate("Subtract")}
-            >
-              <Text style={styles.operationText}>−</Text>
-            </Pressable>
-
-            <Pressable
-              style={({ pressed }) => [
-                styles.operationButton,
-                pressed && styles.buttonPressed,
-              ]}
-              onPress={() => calculate("Multiply")}
-            >
-              <Text style={styles.operationText}>×</Text>
-            </Pressable>
-
-            <Pressable
-              style={({ pressed }) => [
-                styles.operationButton,
-                pressed && styles.buttonPressed,
-              ]}
-              onPress={() => calculate("Divide")}
-            >
-              <Text style={styles.operationText}>÷</Text>
-            </Pressable>
-          </View>
-
-          {/* Clear Button */}
+        {/* Buttons */}
+        <View style={styles.controls}>
           <Pressable
+            accessibilityLabel="Increase counter"
+            onPress={increaseCount}
             style={({ pressed }) => [
-              styles.clearButton,
-              pressed && styles.buttonPressed,
+              styles.button,
+              styles.increaseButton,
+              pressed && styles.pressed,
             ]}
-            onPress={clearCalculator}
           >
-            <Text style={styles.clearText}>Clear</Text>
+            <Text style={styles.buttonText}>
+              Increase
+            </Text>
+          </Pressable>
+
+          <Pressable
+            accessibilityLabel="Decrease counter"
+            onPress={decreaseCount}
+            style={({ pressed }) => [
+              styles.button,
+              styles.decreaseButton,
+              pressed && styles.pressed,
+            ]}
+          >
+            <Text style={styles.buttonText}>
+              Decrease
+            </Text>
+          </Pressable>
+
+          <Pressable
+            accessibilityLabel="Reset counter"
+            onPress={resetCount}
+            style={({ pressed }) => [
+              styles.button,
+              styles.resetButton,
+              pressed && styles.pressed,
+            ]}
+          >
+            <Text style={styles.resetText}>
+              Reset
+            </Text>
           </Pressable>
         </View>
 
-        {/* Result */}
-        <View style={styles.resultCard}>
-          <Text style={styles.resultLabel}>
-            {error ? "MESSAGE" : "RESULT"}
-          </Text>
-
-          <Text style={[styles.resultText, error && styles.errorText]}>
-            {error ?? result ?? "Your answer will appear here"}
-          </Text>
-        </View>
       </View>
     </SafeAreaView>
   );
@@ -164,104 +93,56 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     justifyContent: "center",
+    alignItems: "center",
     padding: 24,
   },
 
-  title: {
+  count: {
     color: "#FFFFFF",
-    fontSize: 32,
+    fontSize: 100,
     fontWeight: "700",
-    marginBottom: 25,
+    marginBottom: 40,
   },
 
-  card: {
-    backgroundColor: "#000000",
-  },
-
-  label: {
-    color: "#AAAAAA",
-    fontSize: 11,
-    fontWeight: "700",
-    marginBottom: 8,
-  },
-
-  input: {
-    backgroundColor: "#111111",
-    borderColor: "#444444",
-    borderWidth: 1,
-    borderRadius: 8,
-    color: "#FFFFFF",
-    fontSize: 17,
-    marginBottom: 18,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
-
-  buttonGrid: {
+  controls: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 5,
+    width: "100%",
+    gap: 10,
   },
 
-  operationButton: {
+  button: {
+    flex: 1,
     alignItems: "center",
-    backgroundColor: "#222222",
-    borderRadius: 8,
-    height: 55,
     justifyContent: "center",
-    width: "22%",
-  },
-
-  operationText: {
-    color: "#FFFFFF",
-    fontSize: 24,
-    fontWeight: "600",
-  },
-
-  clearButton: {
-    alignItems: "center",
-    backgroundColor: "#111111",
-    borderColor: "#444444",
+    paddingVertical: 16,
     borderRadius: 8,
-    borderWidth: 1,
-    marginTop: 15,
-    paddingVertical: 13,
   },
 
-  clearText: {
+  increaseButton: {
+    backgroundColor: "#22C55E",
+  },
+
+  decreaseButton: {
+    backgroundColor: "#EF4444",
+  },
+
+  resetButton: {
+    backgroundColor: "#EAB308",
+  },
+
+  buttonText: {
     color: "#FFFFFF",
-    fontSize: 15,
-    fontWeight: "600",
+    fontSize: 13,
+    fontWeight: "700",
   },
 
-  buttonPressed: {
+  resetText: {
+    color: "#000000",
+    fontSize: 13,
+    fontWeight: "700",
+  },
+
+  pressed: {
     opacity: 0.7,
-  },
-
-  resultCard: {
-    backgroundColor: "#111111",
-    borderColor: "#444444",
-    borderRadius: 8,
-    borderWidth: 1,
-    marginTop: 25,
-    padding: 18,
-  },
-
-  resultLabel: {
-    color: "#AAAAAA",
-    fontSize: 11,
-    fontWeight: "700",
-    marginBottom: 8,
-  },
-
-  resultText: {
-    color: "#FFFFFF",
-    fontSize: 22,
-    fontWeight: "700",
-  },
-
-  errorText: {
-    color: "#FF6B6B",
-    fontSize: 16,
   },
 });
