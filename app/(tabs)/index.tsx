@@ -1,542 +1,145 @@
-﻿import { useState } from "react";
+import { Link } from "expo-router";
 import {
-  FlatList,
-  Modal,
-  Pressable,
   SafeAreaView,
+  ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native";
 
-type Task = {
+type Course = {
   id: string;
-  title: string;
-  dueDate: string;
-  completed: boolean;
+  code: string;
+  time: string;
+  professor: string;
 };
 
-type AlertType = "success" | "danger" | "warning";
-
-const STUDENT_NAME = "Joshua Benedict T. Apor";
-const STUDENT_PROGRAM = "BS Information Technology";
+const courses: Course[] = [
+  {
+    id: "CCE106",
+    code: "2063",
+    time: "10:00am - 12:00pm",
+    professor: "Lowell Jay C. Orcullo",
+  },
+  {
+    id: "IT17",
+    code: "2066",
+    time: "12:30pm - 1:30pm",
+    professor: "Lowell Jay C. Orcullo",
+  },
+  {
+    id: "IT11",
+    code: "2015",
+    time: "1:30pm - 3:30pm",
+    professor: "Xian Rhel S. Cadiogan",
+  },
+  {
+    id: "IT12",
+    code: "2026",
+    time: "3:30pm - 5:30pm",
+    professor: "Kate Stefunny Bruno",
+  },
+  {
+    id: "PHYS101",
+    code: "2017",
+    time: "8:00am - 10:00am",
+    professor: "(Pending)",
+  },
+  {
+    id: "IT14",
+    code: "2042",
+    time: "10:00am - 12:00pm",
+    professor: "(Pending)",
+  },
+  {
+    id: "IT13",
+    code: "2019",
+    time: "1:30pm - 3:30pm",
+    professor: "(Pending)",
+  },
+  {
+    id: "IT10",
+    code: "2044",
+    time: "3:30pm - 5:30pm",
+    professor: "(Pending)",
+  },
+];
 
 export default function HomeScreen() {
-  const [task, setTask] = useState("");
-  const [dueDate, setDueDate] = useState("");
-  const [tasks, setTasks] = useState<Task[]>([]);
-
-  const [taskError, setTaskError] = useState("");
-  const [dueDateError, setDueDateError] = useState("");
-
-  // Custom alert states
-  const [alertVisible, setAlertVisible] = useState(false);
-  const [alertTitle, setAlertTitle] = useState("");
-  const [alertMessage, setAlertMessage] = useState("");
-  const [alertType, setAlertType] =
-    useState<AlertType>("success");
-
-  // Task counters
-  const pendingTasks = tasks.filter(
-    (item) => !item.completed,
-  ).length;
-
-  const completedTasks = tasks.filter(
-    (item) => item.completed,
-  ).length;
-
-  // Show custom alert
-  const showAlert = (
-    title: string,
-    message: string,
-    type: AlertType,
-  ) => {
-    setAlertTitle(title);
-    setAlertMessage(message);
-    setAlertType(type);
-    setAlertVisible(true);
-  };
-
-  // Add Task
-  const addTask = () => {
-    let isValid = true;
-
-    // Validate task title
-    if (task.trim() === "") {
-      setTaskError("Task title is required.");
-      isValid = false;
-    } else {
-      setTaskError("");
-    }
-
-    // Validate due date
-    if (dueDate.trim() === "") {
-      setDueDateError("Due date is required.");
-      isValid = false;
-    } else if (
-      !/^(0[1-9]|1[0-2])\/(0[1-9]|[12]\d|3[01])\/\d{4}$/.test(
-        dueDate,
-      )
-    ) {
-      setDueDateError("Use the format MM/DD/YYYY.");
-      isValid = false;
-    } else {
-      setDueDateError("");
-    }
-
-    if (!isValid) {
-      showAlert(
-        "Missing Information",
-        "Please provide a valid task title and due date in MM/DD/YYYY format.",
-        "warning",
-      );
-      return;
-    }
-
-    const newTask: Task = {
-      id: Date.now().toString(),
-      title: task.trim(),
-      dueDate: dueDate.trim(),
-      completed: false,
-    };
-
-    setTasks((currentTasks) => [
-      ...currentTasks,
-      newTask,
-    ]);
-
-    setTask("");
-    setDueDate("");
-    setTaskError("");
-    setDueDateError("");
-
-    showAlert(
-      "Task Added",
-      `"${newTask.title}" has been added successfully.`,
-      "success",
-    );
-  };
-
-  // Complete / Uncomplete Task
-  const toggleTask = (id: string) => {
-    const selectedTask = tasks.find(
-      (item) => item.id === id,
-    );
-
-    if (!selectedTask) {
-      return;
-    }
-
-    const newCompletedStatus =
-      !selectedTask.completed;
-
-    setTasks((currentTasks) =>
-      currentTasks.map((item) =>
-        item.id === id
-          ? {
-              ...item,
-              completed: newCompletedStatus,
-            }
-          : item,
-      ),
-    );
-
-    if (newCompletedStatus) {
-      showAlert(
-        "Task Completed",
-        `"${selectedTask.title}" has been marked as completed.`,
-        "success",
-      );
-    } else {
-      showAlert(
-        "Task Reopened",
-        `"${selectedTask.title}" has been marked as incomplete.`,
-        "warning",
-      );
-    }
-  };
-
-  // Delete Task
-  const deleteTask = (id: string) => {
-    const selectedTask = tasks.find(
-      (item) => item.id === id,
-    );
-
-    if (!selectedTask) {
-      return;
-    }
-
-    setTasks((currentTasks) =>
-      currentTasks.filter(
-        (item) => item.id !== id,
-      ),
-    );
-
-    showAlert(
-      "Task Deleted",
-      `"${selectedTask.title}" has been deleted.`,
-      "danger",
-    );
-  };
-
-  // Alert color
-  const getAlertColor = () => {
-    switch (alertType) {
-      case "danger":
-        return "#EF4444";
-
-      case "warning":
-        return "#EAB308";
-
-      default:
-        return "#22C55E";
-    }
-  };
-
-  // Alert icon
-  const getAlertIcon = () => {
-    switch (alertType) {
-      case "danger":
-        return "×";
-
-      case "warning":
-        return "!";
-
-      default:
-        return "✓";
-    }
-  };
-
   return (
     <SafeAreaView style={styles.container}>
-      <FlatList
-        data={tasks}
-        keyExtractor={(item) => item.id}
+      <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.listContainer}
-        ListHeaderComponent={
-          <View>
-            {/* Header */}
-            <Text style={styles.title}>
-              My Tasks
-            </Text>
-
-            <Text style={styles.fillText}>
-              Check pending, ongoing and finished tasks!
-            </Text>
-
-            {/* Student Information */}
-            <View style={styles.studentCard}>
-              <Text style={styles.sectionTitle}>
-                Student Information
-              </Text>
-
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>
-                  Name
-                </Text>
-
-                <Text style={styles.infoValue}>
-                  {STUDENT_NAME}
-                </Text>
-              </View>
-
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>
-                  Program
-                </Text>
-
-                <Text style={styles.infoValue}>
-                  {STUDENT_PROGRAM}
-                </Text>
-              </View>
-            </View>
-
-            {/* Task Summary */}
-            <View style={styles.summaryContainer}>
-              {/* Pending */}
-              <View style={styles.summaryCard}>
-                <View
-                  style={[
-                    styles.summaryIcon,
-                    styles.pendingIcon,
-                  ]}
-                >
-                  <Text style={styles.summaryIconText}>
-                    !
-                  </Text>
-                </View>
-
-                <View style={styles.summaryDetails}>
-                  <Text style={styles.summaryNumber}>
-                    {pendingTasks}
-                  </Text>
-
-                  <Text style={styles.summaryLabel}>
-                    Pending Tasks
-                  </Text>
-                </View>
-              </View>
-
-              {/* Completed */}
-              <View style={styles.summaryCard}>
-                <View
-                  style={[
-                    styles.summaryIcon,
-                    styles.completedIcon,
-                  ]}
-                >
-                  <Text style={styles.summaryIconText}>
-                    ✓
-                  </Text>
-                </View>
-
-                <View style={styles.summaryDetails}>
-                  <Text style={styles.summaryNumber}>
-                    {completedTasks}
-                  </Text>
-
-                  <Text style={styles.summaryLabel}>
-                    Completed Tasks
-                  </Text>
-                </View>
-              </View>
-            </View>
-
-            {/* Task Title */}
-            <Text style={styles.label}>
-              Task Title
-            </Text>
-
-            <TextInput
-              placeholder="Enter a task title"
-              placeholderTextColor="#777"
-              value={task}
-              onChangeText={(text) => {
-                setTask(text);
-
-                if (text.trim() !== "") {
-                  setTaskError("");
-                }
-              }}
-              style={[
-                styles.fullInput,
-                taskError !== "" &&
-                  styles.inputError,
-              ]}
-            />
-
-            {taskError !== "" && (
-              <Text style={styles.errorText}>
-                {taskError}
-              </Text>
-            )}
-
-            {/* Due Date */}
-            <Text style={styles.label}>
-              Due Date
-            </Text>
-
-            <TextInput
-              placeholder="MM/DD/YYYY"
-              placeholderTextColor="#777"
-              value={dueDate}
-              keyboardType="number-pad"
-              maxLength={10}
-              onChangeText={(text) => {
-                // Remove everything except numbers
-                const numbers = text.replace(/\D/g, "");
-
-                // Limit to 8 numbers
-                const limited = numbers.slice(0, 8);
-
-                // Format as MM/DD/YYYY
-                let formatted = limited;
-
-                if (limited.length > 2) {
-                  formatted =
-                    limited.slice(0, 2) +
-                    "/" +
-                    limited.slice(2);
-                }
-
-                if (limited.length > 4) {
-                  formatted =
-                    limited.slice(0, 2) +
-                    "/" +
-                    limited.slice(2, 4) +
-                    "/" +
-                    limited.slice(4);
-                }
-
-                setDueDate(formatted);
-
-                if (formatted.trim() !== "") {
-                  setDueDateError("");
-                }
-              }}
-              style={[
-                styles.fullInput,
-                dueDateError !== "" &&
-                  styles.inputError,
-              ]}
-            />
-
-            {dueDateError !== "" && (
-              <Text style={styles.errorText}>
-                {dueDateError}
-              </Text>
-            )}
-
-            {/* Add Task Button */}
-            <Pressable
-              accessibilityLabel="Add task"
-              onPress={addTask}
-              style={({ pressed }) => [
-                styles.addButton,
-                pressed && styles.pressed,
-              ]}
-            >
-              <Text style={styles.addButtonText}>
-                Add Task
-              </Text>
-            </Pressable>
-
-            {/* Task List Title */}
-            <Text style={styles.listTitle}>
-              Current Task List ({tasks.length})
-            </Text>
-          </View>
-        }
-        renderItem={({ item }) => (
-          <View style={styles.taskItem}>
-            {/* Task Content */}
-            <Pressable
-              onPress={() =>
-                toggleTask(item.id)
-              }
-              style={styles.taskContent}
-            >
-              {/* Checkbox */}
-              <View
-                style={[
-                  styles.checkbox,
-                  item.completed &&
-                    styles.checkboxCompleted,
-                ]}
-              >
-                {item.completed && (
-                  <Text style={styles.checkmark}>
-                    ✓
-                  </Text>
-                )}
-              </View>
-
-              {/* Task Information */}
-              <View style={styles.taskDetails}>
-                <Text
-                  style={[
-                    styles.taskText,
-                    item.completed &&
-                      styles.completedTask,
-                  ]}
-                >
-                  {item.title}
-                </Text>
-
-                <Text
-                  style={[
-                    styles.dueDateText,
-                    item.completed &&
-                      styles.completedDueDate,
-                  ]}
-                >
-                  Due: {item.dueDate}
-                </Text>
-              </View>
-            </Pressable>
-
-            {/* Delete Button */}
-            <Pressable
-              accessibilityLabel={`Delete ${item.title}`}
-              onPress={() =>
-                deleteTask(item.id)
-              }
-              style={styles.deleteButton}
-            >
-              <Text style={styles.deleteText}>
-                Delete
-              </Text>
-            </Pressable>
-          </View>
-        )}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>
-              No tasks yet. Add your first task above.
-            </Text>
-          </View>
-        }
-      />
-
-      {/* CUSTOM ALERT MODAL */}
-      <Modal
-        visible={alertVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() =>
-          setAlertVisible(false)
-        }
+        contentContainerStyle={styles.content}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.alertCard}>
-            {/* Alert Icon */}
-            <View
-              style={[
-                styles.alertIcon,
-                {
-                  backgroundColor:
-                    getAlertColor(),
-                },
-              ]}
-            >
-              <Text style={styles.alertIconText}>
-                {getAlertIcon()}
-              </Text>
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={styles.headerTop}>
+            <Text style={styles.eyebrow}>STUDENT PORTAL</Text>
+
+            <View style={styles.headerMark}>
+              <Text style={styles.headerMarkText}>SP</Text>
             </View>
-
-            {/* Alert Title */}
-            <Text style={styles.alertTitle}>
-              {alertTitle}
-            </Text>
-
-            {/* Alert Message */}
-            <Text style={styles.alertMessage}>
-              {alertMessage}
-            </Text>
-
-            {/* OK Button */}
-            <Pressable
-              onPress={() =>
-                setAlertVisible(false)
-              }
-              style={({ pressed }) => [
-                styles.alertButton,
-                {
-                  backgroundColor:
-                    getAlertColor(),
-                },
-                pressed && styles.pressed,
-              ]}
-            >
-              <Text style={styles.alertButtonText}>
-                OK
-              </Text>
-            </Pressable>
           </View>
+
+          <Text style={styles.title}>Welcome back, Joshua</Text>
+
+          <Text style={styles.description}>
+            Keep track of coursework, student details, and account settings
+            from one place.
+          </Text>
         </View>
-      </Modal>
+
+        {/* Course Section */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Current Courses</Text>
+
+          <Text style={styles.courseCount}>
+            {courses.length} COURSES
+          </Text>
+        </View>
+
+        {/* Course List */}
+        <View style={styles.courseList}>
+          {courses.map((course, index) => (
+            <Link
+              key={course.id}
+              href={{
+                pathname: "/course/[id]",
+                params: { id: course.id },
+              }}
+              style={styles.courseLink}
+            >
+              <View style={styles.courseRow}>
+                {/* Number */}
+                <Text style={styles.courseNumber}>
+                  {String(index + 1).padStart(2, "0")}
+                </Text>
+
+                {/* Course Information */}
+                <View style={styles.courseInfo}>
+                  <Text style={styles.courseId}>
+                    {course.id}
+                  </Text>
+
+                  <Text style={styles.courseMeta}>
+                    {course.id} - {course.code}
+                  </Text>
+
+                  <Text style={styles.courseTime}>
+                    {course.time}
+                  </Text>
+                </View>
+
+                {/* Arrow */}
+                <View style={styles.arrowCircle}>
+                  <Text style={styles.arrow}>›</Text>
+                </View>
+              </View>
+            </Link>
+          ))}
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -544,335 +147,150 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#000000",
+    backgroundColor: "#F3EDE2",
   },
 
-  listContainer: {
-    padding: 24,
+  content: {
+    paddingHorizontal: 22,
+    paddingTop: 28,
     paddingBottom: 40,
   },
 
+  /* Header */
+
+  header: {
+    backgroundColor: "#2B2118",
+    borderRadius: 24,
+    padding: 24,
+    marginBottom: 30,
+  },
+
+  headerTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 30,
+  },
+
+  eyebrow: {
+    color: "#F3A847",
+    fontSize: 11,
+    fontWeight: "800",
+    letterSpacing: 1.8,
+  },
+
+  headerMark: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: "#F3A847",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  headerMarkText: {
+    color: "#2B2118",
+    fontSize: 12,
+    fontWeight: "900",
+  },
+
   title: {
-    color: "#FFFFFF",
+    color: "#FFF9EF",
     fontSize: 30,
     fontWeight: "700",
-    marginBottom: 25,
+    lineHeight: 36,
+    marginBottom: 12,
   },
 
-  fillText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    marginTop: -18,
-    marginBottom: 25,
+  description: {
+    color: "#C9BDAE",
+    fontSize: 14,
+    lineHeight: 21,
   },
 
-  /* Student Information */
-  studentCard: {
-    backgroundColor: "#1F1F1F",
-    borderRadius: 10,
-    padding: 18,
-    marginBottom: 15,
-    borderLeftWidth: 4,
-    borderLeftColor: "#EAB308",
+  /* Section */
+
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    justifyContent: "space-between",
+    marginBottom: 14,
   },
 
   sectionTitle: {
-    color: "#FFFFFF",
-    fontSize: 18,
-    fontWeight: "700",
-    marginBottom: 15,
-  },
-
-  infoRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 7,
-  },
-
-  infoLabel: {
-    color: "#888888",
-    fontSize: 14,
-  },
-
-  infoValue: {
-    color: "#FFFFFF",
-    fontSize: 14,
-    fontWeight: "600",
-    flex: 1,
-    textAlign: "right",
-    marginLeft: 15,
-  },
-
-  /* Task Summary */
-  summaryContainer: {
-    flexDirection: "row",
-    gap: 12,
-    marginBottom: 22,
-  },
-
-  summaryCard: {
-    flex: 1,
-    backgroundColor: "#1F1F1F",
-    borderRadius: 10,
-    padding: 14,
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#333333",
-  },
-
-  summaryIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 10,
-  },
-
-  pendingIcon: {
-    backgroundColor: "#EAB308",
-  },
-
-  completedIcon: {
-    backgroundColor: "#22C55E",
-  },
-
-  summaryIconText: {
-    color: "#FFFFFF",
-    fontSize: 20,
-    fontWeight: "800",
-  },
-
-  summaryDetails: {
-    flex: 1,
-  },
-
-  summaryNumber: {
-    color: "#FFFFFF",
+    color: "#2B2118",
     fontSize: 22,
     fontWeight: "800",
   },
 
-  summaryLabel: {
-    color: "#888888",
-    fontSize: 11,
-    marginTop: 2,
+  courseCount: {
+    color: "#A16A29",
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 1,
   },
 
-  /* Labels */
-  label: {
-    color: "#FFFFFF",
-    fontSize: 14,
-    fontWeight: "600",
-    marginBottom: 8,
+  /* Course List */
+
+  courseList: {
+    gap: 10,
   },
 
-  /* Inputs */
-  fullInput: {
-    backgroundColor: "#1F1F1F",
-    color: "#FFFFFF",
-    borderWidth: 1,
-    borderColor: "#333333",
-    borderRadius: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    marginBottom: 6,
+  courseLink: {
+    backgroundColor: "#FFFDF8",
+    borderRadius: 16,
+    paddingVertical: 17,
+    paddingHorizontal: 16,
   },
 
-  inputError: {
-    borderColor: "#EF4444",
-  },
-
-  errorText: {
-    color: "#EF4444",
-    fontSize: 12,
-    marginBottom: 10,
-  },
-
-  /* Add Button */
-  addButton: {
-    backgroundColor: "#22C55E",
-    paddingVertical: 13,
-    justifyContent: "center",
+  courseRow: {
+    flexDirection: "row",
     alignItems: "center",
-    borderRadius: 8,
-    marginTop: 5,
-    marginBottom: 25,
   },
 
-  addButtonText: {
-    color: "#FFFFFF",
-    fontSize: 14,
-    fontWeight: "700",
+  courseNumber: {
+    color: "#C27A27",
+    fontSize: 13,
+    fontWeight: "800",
+    width: 32,
   },
 
-  /* List */
-  listTitle: {
-    color: "#FFFFFF",
+  courseInfo: {
+    flex: 1,
+    marginLeft: 6,
+  },
+
+  courseId: {
+    color: "#2B2118",
     fontSize: 18,
-    fontWeight: "700",
-    marginBottom: 12,
-  },
-
-  /* Task Item */
-  taskItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#1F1F1F",
-    borderRadius: 8,
-    padding: 14,
-    marginBottom: 10,
-  },
-
-  taskContent: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-  },
-
-  /* Checkbox */
-  checkbox: {
-    width: 24,
-    height: 24,
-    borderWidth: 2,
-    borderColor: "#666666",
-    borderRadius: 5,
-    marginRight: 12,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  checkboxCompleted: {
-    backgroundColor: "#22C55E",
-    borderColor: "#22C55E",
-  },
-
-  checkmark: {
-    color: "#FFFFFF",
-    fontWeight: "700",
-  },
-
-  /* Task Details */
-  taskDetails: {
-    flex: 1,
-  },
-
-  taskText: {
-    color: "#FFFFFF",
-    fontSize: 15,
-    fontWeight: "600",
+    fontWeight: "800",
     marginBottom: 4,
   },
 
-  completedTask: {
-    color: "#777777",
-    textDecorationLine: "line-through",
-  },
-
-  dueDateText: {
-    color: "#EAB308",
-    fontSize: 13,
-  },
-
-  completedDueDate: {
-    color: "#555555",
-  },
-
-  /* Delete Button */
-  deleteButton: {
-    backgroundColor: "#EF4444",
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    borderRadius: 6,
-    marginLeft: 10,
-  },
-
-  deleteText: {
-    color: "#FFFFFF",
+  courseMeta: {
+    color: "#6D6258",
     fontSize: 12,
-    fontWeight: "700",
+    fontWeight: "600",
+    marginBottom: 3,
   },
 
-  /* Empty List */
-  emptyContainer: {
-    paddingVertical: 30,
-    alignItems: "center",
+  courseTime: {
+    color: "#968A7D",
+    fontSize: 12,
   },
 
-  emptyText: {
-    color: "#666666",
-    textAlign: "center",
-    fontSize: 14,
-  },
-
-  /* Pressed */
-  pressed: {
-    opacity: 0.7,
-  },
-
-  /* Custom Alert */
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.75)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 25,
-  },
-
-  alertCard: {
-    width: "100%",
-    maxWidth: 360,
-    backgroundColor: "#1F1F1F",
-    borderRadius: 18,
-    padding: 25,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#333333",
-  },
-
-  alertIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 18,
-  },
-
-  alertIconText: {
-    color: "#FFFFFF",
-    fontSize: 32,
-    fontWeight: "800",
-  },
-
-  alertTitle: {
-    color: "#FFFFFF",
-    fontSize: 21,
-    fontWeight: "700",
-    textAlign: "center",
-    marginBottom: 10,
-  },
-
-  alertMessage: {
-    color: "#AAAAAA",
-    fontSize: 14,
-    lineHeight: 21,
-    textAlign: "center",
-    marginBottom: 22,
-  },
-
-  alertButton: {
-    width: "100%",
-    paddingVertical: 13,
-    borderRadius: 9,
+  arrowCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#F3E5D0",
     alignItems: "center",
     justifyContent: "center",
   },
 
-  alertButtonText: {
-    color: "#FFFFFF",
-    fontSize: 14,
-    fontWeight: "700",
+  arrow: {
+    color: "#A16A29",
+    fontSize: 23,
+    lineHeight: 25,
   },
 });
