@@ -1,4 +1,6 @@
-import React from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
 import {
   ScrollView,
   StyleSheet,
@@ -6,11 +8,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-
-import {
-  useLocalSearchParams,
-  useRouter,
-} from "expo-router";
 
 type Event = {
   id: string;
@@ -76,9 +73,35 @@ export default function EventDetailsScreen() {
     id: string;
   }>();
 
+  const [joined, setJoined] = useState(false);
+  const [message, setMessage] = useState("");
+
   const event = events.find(
     (item) => item.id === id
   );
+
+  // Load joined status
+  useEffect(() => {
+    const loadJoinedStatus = async () => {
+      if (!id) return;
+
+      try {
+        const savedStatus =
+          await AsyncStorage.getItem(
+            `joinedEvent_${id}`
+          );
+
+        setJoined(savedStatus === "true");
+      } catch (error) {
+        console.log(
+          "Error loading event status:",
+          error
+        );
+      }
+    };
+
+    loadJoinedStatus();
+  }, [id]);
 
   // Invalid event ID
   if (!event) {
@@ -105,7 +128,9 @@ export default function EventDetailsScreen() {
         <TouchableOpacity
           style={styles.secondaryButton}
           onPress={() =>
-            router.replace("/(tabs)/events" as any)
+            router.replace(
+              "/(tabs)/events" as any
+            )
           }
           activeOpacity={0.8}
         >
@@ -117,13 +142,43 @@ export default function EventDetailsScreen() {
     );
   }
 
+  const handleJoinLeave = async () => {
+    try {
+      if (joined) {
+        await AsyncStorage.removeItem(
+          `joinedEvent_${event.id}`
+        );
+
+        setJoined(false);
+        setMessage("You left this event.");
+      } else {
+        await AsyncStorage.setItem(
+          `joinedEvent_${event.id}`,
+          "true"
+        );
+
+        setJoined(true);
+        setMessage("You joined this event!");
+      }
+    } catch (error) {
+      console.log(
+        "Error updating event status:",
+        error
+      );
+
+      setMessage(
+        "Something went wrong. Please try again."
+      );
+    }
+  };
+
   return (
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
-      {/* Back Button */}
+      {/* Back */}
       <TouchableOpacity
         style={styles.backButton}
         onPress={() => router.back()}
@@ -134,14 +189,13 @@ export default function EventDetailsScreen() {
         </Text>
       </TouchableOpacity>
 
-      {/* Event Title */}
+      {/* Title */}
       <Text style={styles.title}>
         {event.title}
       </Text>
 
-      {/* Event Details */}
+      {/* Details */}
       <View style={styles.card}>
-        {/* Category */}
         <Text style={styles.label}>
           Category
         </Text>
@@ -150,7 +204,6 @@ export default function EventDetailsScreen() {
           {event.category}
         </Text>
 
-        {/* Description */}
         <Text style={styles.label}>
           Description
         </Text>
@@ -159,7 +212,6 @@ export default function EventDetailsScreen() {
           {event.description}
         </Text>
 
-        {/* Date */}
         <Text style={styles.label}>
           Date
         </Text>
@@ -168,7 +220,6 @@ export default function EventDetailsScreen() {
           {event.date}
         </Text>
 
-        {/* Status */}
         <Text style={styles.label}>
           Status
         </Text>
@@ -187,11 +238,71 @@ export default function EventDetailsScreen() {
         </View>
       </View>
 
+      {/* Join / Leave Message */}
+      {message !== "" && (
+        <View
+          style={[
+            styles.messageBox,
+            joined
+              ? styles.successBox
+              : styles.leaveBox,
+          ]}
+        >
+          <Text
+            style={[
+              styles.messageText,
+              joined
+                ? styles.successText
+                : styles.leaveText,
+            ]}
+          >
+            {message}
+          </Text>
+        </View>
+      )}
+
+      {/* Join / Leave Button */}
+      {event.status !== "Completed" && (
+        <TouchableOpacity
+          style={[
+            styles.joinButton,
+            joined && styles.leaveButton,
+          ]}
+          onPress={handleJoinLeave}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.joinButtonText}>
+            {joined
+              ? "Leave Event"
+              : "Join Event"}
+          </Text>
+        </TouchableOpacity>
+      )}
+
+      {/* Joined Status */}
+      {joined && event.status !== "Completed" && (
+        <View style={styles.joinedCard}>
+          <Text style={styles.joinedIcon}>
+            ✓
+          </Text>
+
+          <Text style={styles.joinedTitle}>
+            You're joining this event
+          </Text>
+
+          <Text style={styles.joinedText}>
+            You can leave the event anytime.
+          </Text>
+        </View>
+      )}
+
       {/* View All Events */}
       <TouchableOpacity
         style={styles.button}
         onPress={() =>
-          router.replace("/(tabs)/events" as any)
+          router.replace(
+            "/(tabs)/events" as any
+          )
         }
         activeOpacity={0.8}
       >
@@ -279,12 +390,95 @@ const styles = StyleSheet.create({
     color: "#111827",
   },
 
+  joinButton: {
+    backgroundColor: "#16A34A",
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: "center",
+    marginTop: 20,
+  },
+
+  leaveButton: {
+    backgroundColor: "#DC2626",
+  },
+
+  joinButtonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+
+  messageBox: {
+    padding: 14,
+    borderRadius: 10,
+    marginTop: 20,
+    borderWidth: 1,
+  },
+
+  successBox: {
+    backgroundColor: "#DCFCE7",
+    borderColor: "#86EFAC",
+  },
+
+  leaveBox: {
+    backgroundColor: "#FEE2E2",
+    borderColor: "#FCA5A5",
+  },
+
+  messageText: {
+    fontSize: 14,
+    fontWeight: "600",
+    textAlign: "center",
+  },
+
+  successText: {
+    color: "#15803D",
+  },
+
+  leaveText: {
+    color: "#B91C1C",
+  },
+
+  joinedCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 15,
+    padding: 18,
+    marginTop: 15,
+    alignItems: "center",
+  },
+
+  joinedIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#DCFCE7",
+    color: "#15803D",
+    fontSize: 22,
+    fontWeight: "bold",
+    textAlign: "center",
+    lineHeight: 40,
+    marginBottom: 8,
+  },
+
+  joinedTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#1F2937",
+  },
+
+  joinedText: {
+    fontSize: 13,
+    color: "#6B7280",
+    marginTop: 5,
+    textAlign: "center",
+  },
+
   button: {
     backgroundColor: "#2563EB",
     padding: 15,
     borderRadius: 10,
     alignItems: "center",
-    marginTop: 25,
+    marginTop: 20,
   },
 
   buttonText: {
