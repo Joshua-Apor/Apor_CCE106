@@ -1,296 +1,260 @@
-import { Link } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
-  SafeAreaView,
+  Link,
+  useFocusEffect,
+  useRouter,
+} from "expo-router";
+import React, { useCallback, useState } from "react";
+import {
   ScrollView,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
 
-type Course = {
+import EventCard from "../../components/EventCard";
+import StatCard from "../../components/StatCard";
+
+type Event = {
   id: string;
-  code: string;
-  time: string;
-  professor: string;
+  title: string;
+  description: string;
+  category: string;
+  date: string;
+  status: string;
 };
 
-const courses: Course[] = [
+const recentEvents: Event[] = [
   {
-    id: "CCE106",
-    code: "2063",
-    time: "10:00am - 12:00pm",
-    professor: "Lowell Jay C. Orcullo",
+    id: "1",
+    title: "React Native Workshop",
+    description:
+      "Build the StudyFlow mobile application.",
+    category: "Programming",
+    date: "September 18, 2026",
+    status: "In Progress",
   },
+
   {
-    id: "IT17",
-    code: "2066",
-    time: "12:30pm - 1:30pm",
-    professor: "Lowell Jay C. Orcullo",
+    id: "2",
+    title: "Database Review",
+    description:
+      "Review database normalization concepts.",
+    category: "Database",
+    date: "September 20, 2026",
+    status: "Upcoming",
   },
+
   {
-    id: "IT11",
-    code: "2015",
-    time: "1:30pm - 3:30pm",
-    professor: "Xian Rhel S. Cadiogan",
+    id: "3",
+    title: "UI Design Presentation",
+    description:
+      "Finish and present the mobile app wireframes.",
+    category: "Design",
+    date: "September 15, 2026",
+    status: "Completed",
   },
+
   {
-    id: "IT12",
-    code: "2026",
-    time: "3:30pm - 5:30pm",
-    professor: "Kate Stefunny Bruno",
+    id: "4",
+    title: "Mathematics Class",
+    description:
+      "Complete the assigned mathematics problems.",
+    category: "Mathematics",
+    date: "September 22, 2026",
+    status: "Upcoming",
   },
+
   {
-    id: "PHYS101",
-    code: "2017",
-    time: "8:00am - 10:00am",
-    professor: "(Pending)",
-  },
-  {
-    id: "IT14",
-    code: "2042",
-    time: "10:00am - 12:00pm",
-    professor: "(Pending)",
-  },
-  {
-    id: "IT13",
-    code: "2019",
-    time: "1:30pm - 3:30pm",
-    professor: "(Pending)",
-  },
-  {
-    id: "IT10",
-    code: "2044",
-    time: "3:30pm - 5:30pm",
-    professor: "(Pending)",
+    id: "5",
+    title: "Project Documentation",
+    description:
+      "Submit the StudyFlow project documentation.",
+    category: "Software Engineering",
+    date: "September 25, 2026",
+    status: "In Progress",
   },
 ];
 
-export default function HomeScreen() {
+export default function DashboardScreen() {
+  const router = useRouter();
+
+  const [studentName, setStudentName] =
+    useState("Student");
+
+  useFocusEffect(
+    useCallback(() => {
+      const loadStudentName = async () => {
+        try {
+          const savedName =
+            await AsyncStorage.getItem(
+              "studentName"
+            );
+
+          if (
+            savedName &&
+            savedName.trim() !== ""
+          ) {
+            setStudentName(savedName);
+          } else {
+            setStudentName("Student");
+          }
+        } catch (error) {
+          console.log(
+            "Error loading student name:",
+            error
+          );
+        }
+      };
+
+      loadStudentName();
+    }, [])
+  );
+
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.content}
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}
+    >
+      {/* Greeting */}
+      <Text style={styles.greeting}>
+        Hello, {studentName}
+      </Text>
+
+      <Text style={styles.subtitle}>
+        Stay organized and keep learning.
+      </Text>
+
+      {/* Statistics */}
+      <View style={styles.stats}>
+        <StatCard
+          title="Total Events"
+          value="5"
+          color="#2563EB"
+        />
+
+        <StatCard
+          title="Completed"
+          value="1"
+          color="#16A34A"
+        />
+
+        <StatCard
+          title="In Progress"
+          value="2"
+          color="#F59E0B"
+        />
+
+        <StatCard
+          title="Upcoming"
+          value="2"
+          color="#7C3AED"
+        />
+      </View>
+
+      {/* Events Header */}
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>
+          Recent Events
+        </Text>
+
+        <TouchableOpacity
+          onPress={() =>
+            router.push("/events" as any)
+          }
+          activeOpacity={0.7}
+        >
+          <Text style={styles.viewAll}>
+            View All
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Five Events */}
+      {recentEvents.map((event) => (
+        <TouchableOpacity
+          key={event.id}
+          activeOpacity={0.8}
+          onPress={() =>
+            router.push({
+              pathname: "/event/[id]",
+              params: {
+                id: event.id,
+              },
+            } as any)
+          }
+        >
+          <EventCard event={event} />
+        </TouchableOpacity>
+      ))}
+
+      {/* Link Example */}
+      <Link
+        href="/(tabs)/profile"
+        style={styles.profileLink}
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerTop}>
-            <Text style={styles.eyebrow}>STUDENT PORTAL</Text>
-
-            <View style={styles.headerMark}>
-              <Text style={styles.headerMarkText}>SP</Text>
-            </View>
-          </View>
-
-          <Text style={styles.title}>Welcome back, Joshua</Text>
-
-          <Text style={styles.description}>
-            Keep track of coursework, student details, and account settings
-            from one place.
-          </Text>
-        </View>
-
-        {/* Course Section */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Current Courses</Text>
-
-          <Text style={styles.courseCount}>
-            {courses.length} COURSES
-          </Text>
-        </View>
-
-        {/* Course List */}
-        <View style={styles.courseList}>
-          {courses.map((course, index) => (
-            <Link
-              key={course.id}
-              href={{
-                pathname: "/course/[id]",
-                params: { id: course.id },
-              }}
-              style={styles.courseLink}
-            >
-              <View style={styles.courseRow}>
-                {/* Number */}
-                <Text style={styles.courseNumber}>
-                  {String(index + 1).padStart(2, "0")}
-                </Text>
-
-                {/* Course Information */}
-                <View style={styles.courseInfo}>
-                  <Text style={styles.courseId}>
-                    {course.id}
-                  </Text>
-
-                  <Text style={styles.courseMeta}>
-                    {course.id} - {course.code}
-                  </Text>
-
-                  <Text style={styles.courseTime}>
-                    {course.time}
-                  </Text>
-                </View>
-
-                {/* Arrow */}
-                <View style={styles.arrowCircle}>
-                  <Text style={styles.arrow}>›</Text>
-                </View>
-              </View>
-            </Link>
-          ))}
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+        Open Profile with Link
+      </Link>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F3EDE2",
+    backgroundColor: "#F5F7FB",
   },
 
   content: {
-    paddingHorizontal: 22,
-    paddingTop: 28,
+    padding: 20,
     paddingBottom: 40,
   },
 
-  /* Header */
-
-  header: {
-    backgroundColor: "#2B2118",
-    borderRadius: 24,
-    padding: 24,
-    marginBottom: 30,
+  greeting: {
+    fontSize: 28,
+    fontWeight: "bold",
+    color: "#1E3A8A",
   },
 
-  headerTop: {
+  subtitle: {
+    color: "#6B7280",
+    fontSize: 15,
+    marginTop: 5,
+    marginBottom: 25,
+  },
+
+  stats: {
     flexDirection: "row",
-    alignItems: "center",
+    flexWrap: "wrap",
     justifyContent: "space-between",
-    marginBottom: 30,
   },
-
-  eyebrow: {
-    color: "#F3A847",
-    fontSize: 11,
-    fontWeight: "800",
-    letterSpacing: 1.8,
-  },
-
-  headerMark: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: "#F3A847",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  headerMarkText: {
-    color: "#2B2118",
-    fontSize: 12,
-    fontWeight: "900",
-  },
-
-  title: {
-    color: "#FFF9EF",
-    fontSize: 30,
-    fontWeight: "700",
-    lineHeight: 36,
-    marginBottom: 12,
-  },
-
-  description: {
-    color: "#C9BDAE",
-    fontSize: 14,
-    lineHeight: 21,
-  },
-
-  /* Section */
 
   sectionHeader: {
     flexDirection: "row",
-    alignItems: "flex-end",
     justifyContent: "space-between",
-    marginBottom: 14,
+    alignItems: "center",
+    marginTop: 25,
+    marginBottom: 15,
   },
 
   sectionTitle: {
-    color: "#2B2118",
-    fontSize: 22,
-    fontWeight: "800",
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#111827",
   },
 
-  courseCount: {
-    color: "#A16A29",
-    fontSize: 10,
-    fontWeight: "800",
-    letterSpacing: 1,
-  },
-
-  /* Course List */
-
-  courseList: {
-    gap: 10,
-  },
-
-  courseLink: {
-    backgroundColor: "#FFFDF8",
-    borderRadius: 16,
-    paddingVertical: 17,
-    paddingHorizontal: 16,
-  },
-
-  courseRow: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-
-  courseNumber: {
-    color: "#C27A27",
-    fontSize: 13,
-    fontWeight: "800",
-    width: 32,
-  },
-
-  courseInfo: {
-    flex: 1,
-    marginLeft: 6,
-  },
-
-  courseId: {
-    color: "#2B2118",
-    fontSize: 18,
-    fontWeight: "800",
-    marginBottom: 4,
-  },
-
-  courseMeta: {
-    color: "#6D6258",
-    fontSize: 12,
+  viewAll: {
+    color: "#2563EB",
     fontWeight: "600",
-    marginBottom: 3,
   },
 
-  courseTime: {
-    color: "#968A7D",
-    fontSize: 12,
-  },
-
-  arrowCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "#F3E5D0",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  arrow: {
-    color: "#A16A29",
-    fontSize: 23,
-    lineHeight: 25,
+  profileLink: {
+    color: "#2563EB",
+    fontWeight: "600",
+    textAlign: "center",
+    marginTop: 10,
+    marginBottom: 20,
   },
 });

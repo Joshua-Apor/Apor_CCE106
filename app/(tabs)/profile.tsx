@@ -1,240 +1,362 @@
-import { useRouter } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import React, { useEffect, useState } from "react";
 import {
-  Pressable,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
+  TouchableOpacity,
   View,
 } from "react-native";
 
 export default function ProfileScreen() {
-  const router = useRouter();
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [course, setCourse] = useState("");
 
-  const openStudentDetails = () => {
-    router.push({
-      pathname: "/student/[id]",
-      params: {
-      id: "147446",
-      },
-    });
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  // Load saved profile information
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const savedName =
+          await AsyncStorage.getItem("studentName");
+
+        const savedEmail =
+          await AsyncStorage.getItem("studentEmail");
+
+        const savedCourse =
+          await AsyncStorage.getItem("studentCourse");
+
+        if (savedName) {
+          setName(savedName);
+        }
+
+        if (savedEmail) {
+          setEmail(savedEmail);
+        }
+
+        if (savedCourse) {
+          setCourse(savedCourse);
+        }
+      } catch (error) {
+        console.log(
+          "Error loading profile:",
+          error
+        );
+      }
+    };
+
+    loadProfile();
+  }, []);
+
+  const saveProfile = async () => {
+    setError("");
+    setSuccess("");
+
+    // Name validation
+    if (name.trim() === "") {
+      setError("Please enter your full name.");
+      return;
+    }
+
+    // Email validation
+    if (email.trim() === "") {
+      setError("Please enter your email address.");
+      return;
+    }
+
+    if (
+      !email.includes("@") ||
+      !email.includes(".")
+    ) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+
+    // Course validation
+    if (course.trim() === "") {
+      setError("Please enter your course.");
+      return;
+    }
+
+    try {
+      await AsyncStorage.setItem(
+        "studentName",
+        name.trim()
+      );
+
+      await AsyncStorage.setItem(
+        "studentEmail",
+        email.trim()
+      );
+
+      await AsyncStorage.setItem(
+        "studentCourse",
+        course.trim()
+      );
+
+      setSuccess(
+        "Profile saved successfully!"
+      );
+    } catch (error) {
+      console.log(
+        "Error saving profile:",
+        error
+      );
+
+      setError(
+        "Unable to save your profile. Please try again."
+      );
+    }
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.content}
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}
+    >
+      {/* Header */}
+      <Text style={styles.title}>
+        Profile
+      </Text>
+
+      <Text style={styles.subtitle}>
+        Manage your personal information.
+      </Text>
+
+      {/* Avatar */}
+      <View style={styles.avatar}>
+        <Text style={styles.avatarText}>
+          {name.trim() !== ""
+            ? name.trim().charAt(0).toUpperCase()
+            : "S"}
+        </Text>
+      </View>
+
+      {/* Error */}
+      {error !== "" && (
+        <View style={styles.errorBox}>
+          <Text style={styles.errorText}>
+            {error}
+          </Text>
+        </View>
+      )}
+
+      {/* Success */}
+      {success !== "" && (
+        <View style={styles.successBox}>
+          <Text style={styles.successText}>
+            {success}
+          </Text>
+        </View>
+      )}
+
+      {/* Full Name */}
+      <Text style={styles.label}>
+        Full Name
+      </Text>
+
+      <TextInput
+        style={styles.input}
+        value={name}
+        onChangeText={(text) => {
+          setName(text);
+          setError("");
+          setSuccess("");
+        }}
+        placeholder="Enter your full name"
+        placeholderTextColor="#9CA3AF"
+      />
+
+      {/* Email */}
+      <Text style={styles.label}>
+        Email
+      </Text>
+
+      <TextInput
+        style={styles.input}
+        value={email}
+        onChangeText={(text) => {
+          setEmail(text);
+          setError("");
+          setSuccess("");
+        }}
+        placeholder="Enter your email"
+        placeholderTextColor="#9CA3AF"
+        keyboardType="email-address"
+        autoCapitalize="none"
+        autoCorrect={false}
+      />
+
+      {/* Course */}
+      <Text style={styles.label}>
+        Course
+      </Text>
+
+      <TextInput
+        style={styles.input}
+        value={course}
+        onChangeText={(text) => {
+          setCourse(text);
+          setError("");
+          setSuccess("");
+        }}
+        placeholder="Enter your course"
+        placeholderTextColor="#9CA3AF"
+      />
+
+      {/* Save Button */}
+      <TouchableOpacity
+        style={styles.button}
+        onPress={saveProfile}
+        activeOpacity={0.8}
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerTop}>
-            <Text style={styles.eyebrow}>STUDENT PORTAL</Text>
+        <Text style={styles.buttonText}>
+          Save Profile
+        </Text>
+      </TouchableOpacity>
 
-            <View style={styles.headerMark}>
-              <Text style={styles.headerMarkText}>SP</Text>
-            </View>
-          </View>
+      {/* Profile Information */}
+      <View style={styles.infoCard}>
+        <Text style={styles.infoTitle}>
+          StudyFlow
+        </Text>
 
-          <Text style={styles.title}>Profile</Text>
-
-          <Text style={styles.description}>
-            View your student information and details.
-          </Text>
-        </View>
-
-        {/* Student Information */}
-        <Text style={styles.sectionTitle}>Student Information</Text>
-
-        <View style={styles.infoList}>
-          <View style={styles.infoRow}>
-            <View style={styles.infoText}>
-              <Text style={styles.label}>STUDENT NAME</Text>
-              <Text style={styles.value}>
-                Joshua Benedict T. Apor
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.divider} />
-
-          <View style={styles.infoRow}>
-            <View style={styles.infoText}>
-              <Text style={styles.label}>COURSE</Text>
-              <Text style={styles.value}>BSIT</Text>
-            </View>
-          </View>
-
-          <View style={styles.divider} />
-
-          <View style={styles.infoRow}>
-            <View style={styles.infoText}>
-              <Text style={styles.label}>ID NUMBER</Text>
-              <Text style={styles.value}>147446</Text>
-            </View>
-          </View>
-
-          <View style={styles.divider} />
-
-          <View style={styles.infoRow}>
-            <View style={styles.infoText}>
-              <Text style={styles.label}>YEAR</Text>
-              <Text style={styles.value}>3rd year</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Student Details Button */}
-        <Pressable
-          onPress={openStudentDetails}
-          style={({ pressed }) => [
-            styles.button,
-            pressed && styles.pressed,
-          ]}
-        >
-          <Text style={styles.buttonText}>
-            View Student Details
-          </Text>
-
-          <Text style={styles.buttonArrow}>→</Text>
-        </Pressable>
-      </ScrollView>
-    </SafeAreaView>
+        <Text style={styles.infoText}>
+          Keep your profile information updated so
+          your dashboard can personalize your
+          experience.
+        </Text>
+      </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F3EDE2",
+    backgroundColor: "#F5F7FB",
   },
 
   content: {
-    paddingHorizontal: 22,
-    paddingTop: 28,
+    padding: 20,
     paddingBottom: 40,
   },
 
-  /* Header */
-
-  header: {
-    backgroundColor: "#2B2118",
-    borderRadius: 24,
-    padding: 24,
-    marginBottom: 30,
+  title: {
+    fontSize: 28,
+    fontWeight: "bold",
+    color: "#1E3A8A",
   },
 
-  headerTop: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+  subtitle: {
+    fontSize: 15,
+    color: "#6B7280",
+    marginTop: 5,
     marginBottom: 25,
   },
 
-  eyebrow: {
-    color: "#F3A847",
-    fontSize: 11,
-    fontWeight: "800",
-    letterSpacing: 1.8,
-  },
-
-  headerMark: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: "#F3A847",
+  avatar: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: "#2563EB",
     alignItems: "center",
     justifyContent: "center",
+    alignSelf: "center",
+    marginBottom: 25,
   },
 
-  headerMarkText: {
-    color: "#2B2118",
-    fontSize: 12,
-    fontWeight: "900",
-  },
-
-  title: {
-    color: "#FFF9EF",
-    fontSize: 32,
-    fontWeight: "700",
-    marginBottom: 10,
-  },
-
-  description: {
-    color: "#C9BDAE",
-    fontSize: 14,
-    lineHeight: 21,
-  },
-
-  /* Student Information */
-
-  sectionTitle: {
-    color: "#2B2118",
-    fontSize: 22,
-    fontWeight: "800",
-    marginBottom: 14,
-  },
-
-  infoList: {
-    backgroundColor: "#FFFDF8",
-    borderRadius: 18,
-    paddingHorizontal: 18,
-    paddingVertical: 4,
-    marginBottom: 16,
-  },
-
-  infoRow: {
-    paddingVertical: 17,
-  },
-
-  infoText: {
-    flex: 1,
+  avatarText: {
+    color: "#FFFFFF",
+    fontSize: 36,
+    fontWeight: "bold",
   },
 
   label: {
-    color: "#968A7D",
-    fontSize: 10,
-    fontWeight: "800",
-    letterSpacing: 1.3,
-    marginBottom: 5,
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#374151",
+    marginBottom: 7,
   },
 
-  value: {
-    color: "#2B2118",
+  input: {
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#D1D5DB",
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+    marginBottom: 18,
     fontSize: 16,
-    fontWeight: "700",
+    color: "#111827",
   },
-
-  divider: {
-    height: 1,
-    backgroundColor: "#E8DED0",
-  },
-
-  /* Button */
 
   button: {
-    backgroundColor: "#C27A27",
-    borderRadius: 14,
-    minHeight: 56,
-    paddingHorizontal: 18,
-    flexDirection: "row",
+    backgroundColor: "#2563EB",
+    paddingVertical: 15,
+    borderRadius: 10,
     alignItems: "center",
-    justifyContent: "space-between",
+    marginTop: 5,
   },
 
   buttonText: {
     color: "#FFFFFF",
-    fontSize: 15,
-    fontWeight: "800",
+    fontSize: 16,
+    fontWeight: "bold",
   },
 
-  buttonArrow: {
-    color: "#FFFFFF",
-    fontSize: 22,
-    fontWeight: "400",
+  errorBox: {
+    backgroundColor: "#FEE2E2",
+    borderWidth: 1,
+    borderColor: "#FCA5A5",
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 20,
   },
 
-  pressed: {
-    opacity: 0.75,
+  errorText: {
+    color: "#B91C1C",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+
+  successBox: {
+    backgroundColor: "#DCFCE7",
+    borderWidth: 1,
+    borderColor: "#86EFAC",
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 20,
+  },
+
+  successText: {
+    color: "#15803D",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+
+  infoCard: {
+    backgroundColor: "#FFFFFF",
+    padding: 18,
+    borderRadius: 15,
+    marginTop: 30,
+  },
+
+  infoTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#1E3A8A",
+    marginBottom: 8,
+  },
+
+  infoText: {
+    fontSize: 14,
+    color: "#6B7280",
+    lineHeight: 21,
   },
 });

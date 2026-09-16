@@ -1,4 +1,5 @@
 import { Stack } from "expo-router";
+import React from "react";
 
 export default function RootLayout() {
   return (
@@ -11,16 +12,10 @@ export default function RootLayout() {
       />
 
       <Stack.Screen
-        name="course/[id]"
+        name="event/[id]"
         options={{
-          title: "Course Details",
-        }}
-      />
-
-      <Stack.Screen
-        name="student/[id]"
-        options={{
-          title: "Student Details",
+          title: "Event Details",
+          headerShown: false,
         }}
       />
     </Stack>
