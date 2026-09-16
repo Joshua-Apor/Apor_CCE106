@@ -7,15 +7,15 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: "#2563EB",
-        tabBarInactiveTintColor: "#9CA3AF",
+        tabBarActiveTintColor: "#C27A27",
+        tabBarInactiveTintColor: "#968A7D",
         tabBarStyle: {
           height: 65,
           paddingBottom: 8,
           paddingTop: 5,
-          backgroundColor: "#FFFFFF",
+          backgroundColor: "#FFFDF8",
           borderTopWidth: 1,
-          borderTopColor: "#E5E7EB",
+          borderTopColor: "#E8DED0",
         },
         tabBarLabelStyle: {
           fontSize: 12,
@@ -27,7 +27,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Dashboard",
+          title: "Home",
           tabBarIcon: ({ color, size }) => (
             <Ionicons
               name="home-outline"
@@ -40,7 +40,7 @@ export default function TabsLayout() {
 
       {/* Events */}
       <Tabs.Screen
-        name="events"
+        name="event"
         options={{
           title: "Events",
           tabBarIcon: ({ color, size }) => (

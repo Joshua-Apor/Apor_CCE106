@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "CCE106_First_Task",
-    "slug": "CCE106_First_Task",
+    "name": "EventMate",
+    "slug": "eventmate",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",

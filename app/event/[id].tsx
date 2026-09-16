@@ -2,69 +2,14 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
-
-type Event = {
-  id: string;
-  title: string;
-  description: string;
-  category: string;
-  date: string;
-  status: string;
-};
-
-const events: Event[] = [
-  {
-    id: "1",
-    title: "React Native Workshop",
-    description:
-      "Build the StudyFlow mobile application.",
-    category: "Programming",
-    date: "September 18, 2026",
-    status: "Upcoming",
-  },
-  {
-    id: "2",
-    title: "Database Review",
-    description:
-      "Review database normalization concepts.",
-    category: "Database",
-    date: "September 20, 2026",
-    status: "Upcoming",
-  },
-  {
-    id: "3",
-    title: "UI Design Presentation",
-    description:
-      "Present the mobile app wireframes.",
-    category: "Design",
-    date: "September 15, 2026",
-    status: "Completed",
-  },
-  {
-    id: "4",
-    title: "Mathematics Class",
-    description:
-      "Complete the assigned mathematics problems.",
-    category: "Mathematics",
-    date: "September 22, 2026",
-    status: "Upcoming",
-  },
-  {
-    id: "5",
-    title: "Project Documentation",
-    description:
-      "Submit the StudyFlow project documentation.",
-    category: "Software Engineering",
-    date: "September 25, 2026",
-    status: "Upcoming",
-  },
-];
+import { events } from "../../constants/events";
 
 export default function EventDetailsScreen() {
   const router = useRouter();
@@ -73,12 +18,23 @@ export default function EventDetailsScreen() {
     id: string;
   }>();
 
-  const [joined, setJoined] = useState(false);
-  const [message, setMessage] = useState("");
-
   const event = events.find(
     (item) => item.id === id
   );
+
+  const [joined, setJoined] = useState(
+    event?.availability === "Joined"
+  );
+  const [message, setMessage] = useState("");
+
+  const handleBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+
+    router.replace("/(tabs)/event");
+  };
 
   // Load joined status
   useEffect(() => {
@@ -91,7 +47,10 @@ export default function EventDetailsScreen() {
             `joinedEvent_${id}`
           );
 
-        setJoined(savedStatus === "true");
+        setJoined(
+          savedStatus === "true" ||
+            event?.availability === "Joined"
+        );
       } catch (error) {
         console.log(
           "Error loading event status:",
@@ -101,7 +60,7 @@ export default function EventDetailsScreen() {
     };
 
     loadJoinedStatus();
-  }, [id]);
+  }, [event?.availability, id]);
 
   // Invalid event ID
   if (!event) {
@@ -112,12 +71,12 @@ export default function EventDetailsScreen() {
         </Text>
 
         <Text style={styles.notFoundText}>
-          The event with ID "{id}" does not exist.
+          Event ID: {id}
         </Text>
 
         <TouchableOpacity
           style={styles.button}
-          onPress={() => router.back()}
+          onPress={handleBack}
           activeOpacity={0.8}
         >
           <Text style={styles.buttonText}>
@@ -128,9 +87,7 @@ export default function EventDetailsScreen() {
         <TouchableOpacity
           style={styles.secondaryButton}
           onPress={() =>
-            router.replace(
-              "/(tabs)/events" as any
-            )
+            router.replace("/(tabs)/event")
           }
           activeOpacity={0.8}
         >
@@ -181,11 +138,11 @@ export default function EventDetailsScreen() {
       {/* Back */}
       <TouchableOpacity
         style={styles.backButton}
-        onPress={() => router.back()}
+        onPress={handleBack}
         activeOpacity={0.7}
       >
         <Text style={styles.backText}>
-          ← Back
+          {"<- Back"}
         </Text>
       </TouchableOpacity>
 
@@ -217,7 +174,23 @@ export default function EventDetailsScreen() {
         </Text>
 
         <Text style={styles.value}>
-          {event.date}
+          {event.date}, {event.time}
+        </Text>
+
+        <Text style={styles.label}>
+          Venue
+        </Text>
+
+        <Text style={styles.value}>
+          {event.venue}
+        </Text>
+
+        <Text style={styles.label}>
+          Availability
+        </Text>
+
+        <Text style={styles.value}>
+          {joined ? "Joined" : event.availability}
         </Text>
 
         <Text style={styles.label}>
@@ -263,31 +236,31 @@ export default function EventDetailsScreen() {
 
       {/* Join / Leave Button */}
       {event.status !== "Completed" && (
-        <TouchableOpacity
-          style={[
+        <Pressable
+          style={({ pressed }) => [
             styles.joinButton,
             joined && styles.leaveButton,
+            pressed && styles.buttonPressed,
           ]}
           onPress={handleJoinLeave}
-          activeOpacity={0.8}
         >
           <Text style={styles.joinButtonText}>
             {joined
               ? "Leave Event"
               : "Join Event"}
           </Text>
-        </TouchableOpacity>
+        </Pressable>
       )}
 
       {/* Joined Status */}
       {joined && event.status !== "Completed" && (
         <View style={styles.joinedCard}>
           <Text style={styles.joinedIcon}>
-            ✓
+            OK
           </Text>
 
           <Text style={styles.joinedTitle}>
-            You're joining this event
+            You are joining this event
           </Text>
 
           <Text style={styles.joinedText}>
@@ -300,9 +273,7 @@ export default function EventDetailsScreen() {
       <TouchableOpacity
         style={styles.button}
         onPress={() =>
-          router.replace(
-            "/(tabs)/events" as any
-          )
+          router.replace("/(tabs)/event")
         }
         activeOpacity={0.8}
       >
@@ -317,54 +288,63 @@ export default function EventDetailsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F5F7FB",
+    backgroundColor: "#F3EDE2",
   },
 
   content: {
-    padding: 20,
+    width: "100%",
+    maxWidth: 760,
+    alignSelf: "center",
+    padding: 22,
     paddingBottom: 40,
   },
 
   backButton: {
-    marginBottom: 20,
+    alignSelf: "flex-start",
+    backgroundColor: "#FFFDF8",
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    marginBottom: 18,
   },
 
   backText: {
-    color: "#2563EB",
-    fontSize: 16,
-    fontWeight: "600",
+    color: "#C27A27",
+    fontSize: 14,
+    fontWeight: "800",
   },
 
   title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "#1E3A8A",
+    fontSize: 32,
+    fontWeight: "800",
+    color: "#2B2118",
     marginBottom: 20,
   },
 
   card: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
+    backgroundColor: "#FFFDF8",
+    borderRadius: 18,
     padding: 20,
-
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
+    shadowColor: "#2B2118",
+    shadowOpacity: 0.06,
     shadowRadius: 8,
-
     elevation: 2,
   },
 
   label: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#6B7280",
+    fontSize: 11,
+    fontWeight: "800",
+    color: "#968A7D",
+    letterSpacing: 1,
+    textTransform: "uppercase",
     marginTop: 14,
     marginBottom: 5,
   },
 
   value: {
-    fontSize: 17,
-    color: "#111827",
+    fontSize: 16,
+    color: "#2B2118",
+    fontWeight: "700",
     lineHeight: 24,
   },
 
@@ -377,21 +357,21 @@ const styles = StyleSheet.create({
   },
 
   upcoming: {
-    backgroundColor: "#DBEAFE",
+    backgroundColor: "#F3EDE2",
   },
 
   completed: {
-    backgroundColor: "#DCFCE7",
+    backgroundColor: "#DDEDD5",
   },
 
   statusText: {
     fontSize: 14,
-    fontWeight: "700",
-    color: "#111827",
+    fontWeight: "800",
+    color: "#2B2118",
   },
 
   joinButton: {
-    backgroundColor: "#16A34A",
+    backgroundColor: "#C27A27",
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: "center",
@@ -399,11 +379,16 @@ const styles = StyleSheet.create({
   },
 
   leaveButton: {
-    backgroundColor: "#DC2626",
+    backgroundColor: "#A84A3D",
+  },
+
+  buttonPressed: {
+    opacity: 0.75,
+    transform: [{ scale: 0.99 }],
   },
 
   joinButtonText: {
-    color: "#FFFFFF",
+    color: "#FFF9EF",
     fontSize: 16,
     fontWeight: "bold",
   },
@@ -416,13 +401,13 @@ const styles = StyleSheet.create({
   },
 
   successBox: {
-    backgroundColor: "#DCFCE7",
-    borderColor: "#86EFAC",
+    backgroundColor: "#EEF5E9",
+    borderColor: "#BBD1A8",
   },
 
   leaveBox: {
-    backgroundColor: "#FEE2E2",
-    borderColor: "#FCA5A5",
+    backgroundColor: "#FFF1EF",
+    borderColor: "#E7B7AE",
   },
 
   messageText: {
@@ -432,15 +417,15 @@ const styles = StyleSheet.create({
   },
 
   successText: {
-    color: "#15803D",
+    color: "#557A42",
   },
 
   leaveText: {
-    color: "#B91C1C",
+    color: "#A84A3D",
   },
 
   joinedCard: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#FFFDF8",
     borderRadius: 15,
     padding: 18,
     marginTop: 15,
@@ -451,9 +436,9 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#DCFCE7",
-    color: "#15803D",
-    fontSize: 22,
+    backgroundColor: "#F3EDE2",
+    color: "#C27A27",
+    fontSize: 14,
     fontWeight: "bold",
     textAlign: "center",
     lineHeight: 40,
@@ -463,18 +448,18 @@ const styles = StyleSheet.create({
   joinedTitle: {
     fontSize: 16,
     fontWeight: "bold",
-    color: "#1F2937",
+    color: "#2B2118",
   },
 
   joinedText: {
     fontSize: 13,
-    color: "#6B7280",
+    color: "#8A7D70",
     marginTop: 5,
     textAlign: "center",
   },
 
   button: {
-    backgroundColor: "#2563EB",
+    backgroundColor: "#C27A27",
     padding: 15,
     borderRadius: 10,
     alignItems: "center",
@@ -482,30 +467,30 @@ const styles = StyleSheet.create({
   },
 
   buttonText: {
-    color: "#FFFFFF",
+    color: "#FFF9EF",
     fontSize: 16,
     fontWeight: "bold",
   },
 
   secondaryButton: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#FFFDF8",
     padding: 15,
     borderRadius: 10,
     alignItems: "center",
     marginTop: 12,
     borderWidth: 1,
-    borderColor: "#2563EB",
+    borderColor: "#C27A27",
   },
 
   secondaryButtonText: {
-    color: "#2563EB",
+    color: "#C27A27",
     fontSize: 16,
     fontWeight: "bold",
   },
 
   notFoundContainer: {
     flex: 1,
-    backgroundColor: "#F5F7FB",
+    backgroundColor: "#F3EDE2",
     padding: 20,
     justifyContent: "center",
   },
@@ -513,16 +498,17 @@ const styles = StyleSheet.create({
   notFoundTitle: {
     fontSize: 28,
     fontWeight: "bold",
-    color: "#1E3A8A",
+    color: "#2B2118",
     marginBottom: 10,
     textAlign: "center",
   },
 
   notFoundText: {
     fontSize: 16,
-    color: "#6B7280",
+    color: "#8A7D70",
     textAlign: "center",
     lineHeight: 23,
     marginBottom: 10,
   },
 });
+

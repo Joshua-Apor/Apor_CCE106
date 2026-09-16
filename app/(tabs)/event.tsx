@@ -1,106 +1,138 @@
-import React, { useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import React, { useCallback, useState } from "react";
 import {
   FlatList,
+  SafeAreaView,
   StyleSheet,
   Text,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from "react-native";
 
-import { useRouter } from "expo-router";
+import {
+  useFocusEffect,
+  useRouter,
+} from "expo-router";
 
 import EventCard from "../../components/EventCard";
+import { events } from "../../constants/events";
 
-type Event = {
-  id: string;
-  title: string;
-  description: string;
-  category: string;
-  date: string;
-  status: string;
-};
+type EventFilter =
+  | "All"
+  | "Programming"
+  | "Database"
+  | "Design"
+  | "Upcoming"
+  | "In Progress"
+  | "Completed"
+  | "Joined";
 
-const events: Event[] = [
-  {
-    id: "1",
-    title: "React Native Workshop",
-    description:
-      "Build the StudyFlow mobile application.",
-    category: "Programming",
-    date: "September 18, 2026",
-    status: "Upcoming",
-  },
-  {
-    id: "2",
-    title: "Database Review",
-    description:
-      "Review database normalization concepts.",
-    category: "Database",
-    date: "September 20, 2026",
-    status: "Upcoming",
-  },
-  {
-    id: "3",
-    title: "UI Design Presentation",
-    description:
-      "Present the mobile app wireframes.",
-    category: "Design",
-    date: "September 15, 2026",
-    status: "Completed",
-  },
-  {
-    id: "4",
-    title: "Mathematics Class",
-    description:
-      "Complete the assigned mathematics problems.",
-    category: "Mathematics",
-    date: "September 22, 2026",
-    status: "Upcoming",
-  },
-  {
-    id: "5",
-    title: "Project Documentation",
-    description:
-      "Submit the StudyFlow project documentation.",
-    category: "Software Engineering",
-    date: "September 25, 2026",
-    status: "Upcoming",
-  },
+const filters: EventFilter[] = [
+  "All",
+  "Programming",
+  "Database",
+  "Design",
+  "Upcoming",
+  "In Progress",
+  "Completed",
+  "Joined",
 ];
 
 export default function EventsScreen() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
 
-  const [filter, setFilter] = useState("All");
+  const [filter, setFilter] =
+    useState<EventFilter>("All");
+  const [joinedEventIds, setJoinedEventIds] =
+    useState<string[]>([]);
+  const isWideLayout = width >= 700;
+
+  useFocusEffect(
+    useCallback(() => {
+      const loadJoinedEvents = async () => {
+        const joinedStatuses = await Promise.all(
+          events.map(async (event) => {
+            const savedStatus =
+              await AsyncStorage.getItem(
+                `joinedEvent_${event.id}`
+              );
+
+            return savedStatus === "true"
+              ? event.id
+              : null;
+          })
+        );
+
+        setJoinedEventIds(
+          joinedStatuses.filter(
+            (eventId): eventId is string =>
+              eventId !== null
+          )
+        );
+      };
+
+      loadJoinedEvents();
+    }, [])
+  );
 
   const filteredEvents =
     filter === "All"
       ? events
-      : events.filter(
+      : filter === "Joined"
+      ? events.filter((event) =>
+          joinedEventIds.includes(event.id) ||
+          event.availability === "Joined"
+        )
+      : ["Upcoming", "In Progress", "Completed"].includes(
+          filter
+        )
+      ? events.filter(
           (event) => event.status === filter
+        )
+      : events.filter(
+          (event) => event.category === filter
         );
 
   return (
-    <View style={styles.container}>
-      {/* Title */}
-      <Text style={styles.title}>
-        My Events
-      </Text>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.eyebrow}>
+              EVENTMATE
+            </Text>
+            <Text style={styles.title}>
+              Events
+            </Text>
+            <Text style={styles.subtitle}>
+              Browse and join campus activities.
+            </Text>
+          </View>
+        </View>
 
-      <Text style={styles.subtitle}>
-        View and manage your upcoming events.
-      </Text>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>
+            Browse Events
+          </Text>
+          <Text style={styles.sectionLabel}>
+            FILTERS
+          </Text>
+        </View>
 
-      {/* Filters */}
-      <View style={styles.filters}>
-        {["All", "Upcoming", "Completed"].map(
-          (item) => (
+        <Text style={styles.resultCount}>
+          {filteredEvents.length} event
+          {filteredEvents.length === 1 ? "" : "s"} shown
+        </Text>
+
+        <View style={styles.filters}>
+          {filters.map((item) => (
             <TouchableOpacity
               key={item}
               style={[
                 styles.filterButton,
-                filter === item &&
-                  styles.activeFilter,
+                filter === item && styles.activeFilter,
               ]}
               onPress={() => setFilter(item)}
               activeOpacity={0.8}
@@ -115,102 +147,177 @@ export default function EventsScreen() {
                 {item}
               </Text>
             </TouchableOpacity>
-          )
-        )}
+          ))}
+        </View>
+
+        <FlatList
+          key={isWideLayout ? "wide" : "narrow"}
+          data={filteredEvents}
+          numColumns={isWideLayout ? 2 : 1}
+          columnWrapperStyle={
+            isWideLayout
+              ? styles.columnWrapper
+              : undefined
+          }
+          keyExtractor={(item) => item.id}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.listContent}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() =>
+                router.push({
+                  pathname: "/event/[id]",
+                  params: {
+                    id: item.id,
+                  },
+                })
+              }
+            >
+              <EventCard
+                event={{
+                  ...item,
+                  availability:
+                    joinedEventIds.includes(item.id) ||
+                    item.availability === "Joined"
+                      ? "Joined"
+                      : item.availability,
+                }}
+              />
+            </TouchableOpacity>
+          )}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyTitle}>
+                No Events Found
+              </Text>
+
+              <Text style={styles.emptyText}>
+                There are no events in this filter.
+              </Text>
+            </View>
+          }
+        />
       </View>
-
-      {/* Event List */}
-      <FlatList
-        data={filteredEvents}
-        keyExtractor={(item) => item.id}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.listContent}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={() =>
-              router.push({
-                pathname: "/event/[id]",
-                params: {
-                  id: item.id,
-                },
-              } as any)
-            }
-          >
-            <EventCard event={item} />
-          </TouchableOpacity>
-        )}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyTitle}>
-              No Events Found
-            </Text>
-
-            <Text style={styles.emptyText}>
-              There are no events with the selected
-              status.
-            </Text>
-          </View>
-        }
-      />
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#F3EDE2",
+  },
+
   container: {
     flex: 1,
-    backgroundColor: "#F5F7FB",
-    padding: 20,
+    width: "100%",
+    maxWidth: 760,
+    alignSelf: "center",
+    paddingHorizontal: 22,
+    paddingTop: 24,
+  },
+
+  header: {
+    backgroundColor: "#2B2118",
+    borderRadius: 24,
+    padding: 24,
+    minHeight: 150,
+    justifyContent: "space-between",
+    marginBottom: 24,
+  },
+
+  eyebrow: {
+    color: "#F3A847",
+    fontSize: 11,
+    fontWeight: "800",
+    letterSpacing: 1.8,
+    marginBottom: 18,
   },
 
   title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "#1E3A8A",
+    color: "#FFF9EF",
+    fontSize: 34,
+    fontWeight: "800",
+    marginBottom: 8,
   },
 
   subtitle: {
-    fontSize: 15,
-    color: "#6B7280",
-    marginTop: 5,
-    marginBottom: 20,
+    color: "#C9BDAE",
+    fontSize: 14,
+    fontWeight: "500",
+  },
+
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 12,
+  },
+
+  sectionTitle: {
+    color: "#2B2118",
+    fontSize: 21,
+    fontWeight: "800",
+  },
+
+  sectionLabel: {
+    color: "#968A7D",
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 1.3,
+  },
+
+  resultCount: {
+    color: "#8A7D70",
+    fontSize: 13,
+    fontWeight: "700",
+    marginBottom: 10,
   },
 
   filters: {
     flexDirection: "row",
     flexWrap: "wrap",
+    gap: 8,
     marginBottom: 15,
   },
 
   filterButton: {
-    paddingHorizontal: 14,
+    minWidth: 76,
+    minHeight: 34,
+    paddingHorizontal: 10,
     paddingVertical: 8,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#FFFDF8",
     borderRadius: 20,
-    marginRight: 8,
-    marginBottom: 8,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: "#E8DED0",
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   activeFilter: {
-    backgroundColor: "#2563EB",
-    borderColor: "#2563EB",
+    backgroundColor: "#2B2118",
+    borderColor: "#2B2118",
   },
 
   filterText: {
-    color: "#374151",
-    fontSize: 13,
+    color: "#8A7D70",
+    fontSize: 12,
+    fontWeight: "700",
+    textAlign: "center",
   },
 
   activeFilterText: {
     color: "#FFFFFF",
-    fontWeight: "600",
+    fontWeight: "800",
   },
 
   listContent: {
     paddingBottom: 30,
+  },
+
+  columnWrapper: {
+    gap: 12,
   },
 
   emptyContainer: {
@@ -220,14 +327,14 @@ const styles = StyleSheet.create({
 
   emptyTitle: {
     fontSize: 20,
-    fontWeight: "bold",
-    color: "#1F2937",
+    fontWeight: "800",
+    color: "#2B2118",
     marginBottom: 8,
   },
 
   emptyText: {
     fontSize: 14,
-    color: "#6B7280",
+    color: "#968A7D",
     textAlign: "center",
   },
 });

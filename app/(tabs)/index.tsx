@@ -6,91 +6,65 @@ import {
 } from "expo-router";
 import React, { useCallback, useState } from "react";
 import {
+  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from "react-native";
 
 import EventCard from "../../components/EventCard";
 import StatCard from "../../components/StatCard";
-
-type Event = {
-  id: string;
-  title: string;
-  description: string;
-  category: string;
-  date: string;
-  status: string;
-};
-
-const recentEvents: Event[] = [
-  {
-    id: "1",
-    title: "React Native Workshop",
-    description:
-      "Build the StudyFlow mobile application.",
-    category: "Programming",
-    date: "September 18, 2026",
-    status: "In Progress",
-  },
-
-  {
-    id: "2",
-    title: "Database Review",
-    description:
-      "Review database normalization concepts.",
-    category: "Database",
-    date: "September 20, 2026",
-    status: "Upcoming",
-  },
-
-  {
-    id: "3",
-    title: "UI Design Presentation",
-    description:
-      "Finish and present the mobile app wireframes.",
-    category: "Design",
-    date: "September 15, 2026",
-    status: "Completed",
-  },
-
-  {
-    id: "4",
-    title: "Mathematics Class",
-    description:
-      "Complete the assigned mathematics problems.",
-    category: "Mathematics",
-    date: "September 22, 2026",
-    status: "Upcoming",
-  },
-
-  {
-    id: "5",
-    title: "Project Documentation",
-    description:
-      "Submit the StudyFlow project documentation.",
-    category: "Software Engineering",
-    date: "September 25, 2026",
-    status: "In Progress",
-  },
-];
+import { events } from "../../constants/events";
 
 export default function DashboardScreen() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isWideLayout = width >= 700;
 
   const [studentName, setStudentName] =
     useState("Student");
+  const [joinedCount, setJoinedCount] = useState(
+    events.filter(
+      (event) => event.availability === "Joined"
+    ).length
+  );
+  const [joinedEventIds, setJoinedEventIds] =
+    useState<string[]>(
+      events
+        .filter(
+          (event) => event.availability === "Joined"
+        )
+        .map((event) => event.id)
+    );
+  const initial = studentName
+    .trim()
+    .charAt(0)
+    .toUpperCase() || "S";
 
   useFocusEffect(
     useCallback(() => {
-      const loadStudentName = async () => {
+      const loadDashboardData = async () => {
         try {
           const savedName =
             await AsyncStorage.getItem(
               "studentName"
             );
+          const joinedStatuses = await Promise.all(
+            events.map(async (event) => {
+              const savedStatus =
+                await AsyncStorage.getItem(
+                  `joinedEvent_${event.id}`
+                );
+
+              return savedStatus === "true" ||
+                event.availability === "Joined"
+                ? event.id
+                : null;
+            })
+          );
 
           if (
             savedName &&
@@ -100,161 +74,395 @@ export default function DashboardScreen() {
           } else {
             setStudentName("Student");
           }
+
+          setJoinedCount(
+            joinedStatuses.filter(Boolean).length
+          );
+          setJoinedEventIds(
+            joinedStatuses.filter(
+              (eventId): eventId is string =>
+                eventId !== null
+            )
+          );
         } catch (error) {
           console.log(
-            "Error loading student name:",
+            "Error loading dashboard data:",
             error
           );
         }
       };
 
-      loadStudentName();
+      loadDashboardData();
     }, [])
   );
 
-  return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* Greeting */}
-      <Text style={styles.greeting}>
-        Hello, {studentName}
-      </Text>
+  const upcomingCount = events.filter(
+    (event) => event.status === "Upcoming"
+  ).length;
 
-      <Text style={styles.subtitle}>
-        Stay organized and keep learning.
-      </Text>
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        <View style={styles.container}>
+          <View style={styles.header}>
+            <View style={styles.headerContent}>
+              <Text style={styles.eyebrow}>
+                EVENTMATE
+              </Text>
+
+              <Text style={styles.title}>
+                Dashboard
+              </Text>
+
+              <Text style={styles.subtitle}>
+                Welcome back, {studentName}
+              </Text>
+            </View>
+
+            <View style={styles.profileButton}>
+              <Text style={styles.profileLetter}>
+                {initial}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>
+              Overview
+            </Text>
+            <Text style={styles.sectionLabel}>
+              CURRENT
+            </Text>
+          </View>
 
       {/* Statistics */}
-      <View style={styles.stats}>
+      <View
+        style={[
+          styles.stats,
+          isWideLayout && styles.wideStats,
+        ]}
+      >
         <StatCard
           title="Total Events"
-          value="5"
-          color="#2563EB"
+          value={String(events.length)}
+          color="#2B2118"
+          style={
+            isWideLayout
+              ? styles.wideStatCard
+              : undefined
+          }
         />
 
         <StatCard
-          title="Completed"
-          value="1"
-          color="#16A34A"
+          title="Joined Events"
+          value={String(joinedCount)}
+          color="#2B2118"
+          style={
+            isWideLayout
+              ? styles.wideStatCard
+              : undefined
+          }
         />
 
         <StatCard
-          title="In Progress"
-          value="2"
-          color="#F59E0B"
+          title="Upcoming Events"
+          value={String(upcomingCount)}
+          color="#2B2118"
+          style={
+            isWideLayout
+              ? styles.wideStatCard
+              : undefined
+          }
         />
 
         <StatCard
-          title="Upcoming"
-          value="2"
-          color="#7C3AED"
+          title="Available"
+          value={String(
+            events.length - joinedCount
+          )}
+          color="#2B2118"
+          style={
+            isWideLayout
+              ? styles.wideStatCard
+              : undefined
+          }
         />
       </View>
 
-      {/* Events Header */}
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>
-          Recent Events
-        </Text>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>
+              Quick Actions
+            </Text>
+          </View>
 
-        <TouchableOpacity
-          onPress={() =>
-            router.push("/events" as any)
-          }
-          activeOpacity={0.7}
-        >
-          <Text style={styles.viewAll}>
-            View All
-          </Text>
-        </TouchableOpacity>
-      </View>
+          <View style={styles.actionsCard}>
+            <TouchableOpacity
+              style={styles.actionRow}
+              onPress={() =>
+                router.push("/(tabs)/event")
+              }
+              activeOpacity={0.7}
+            >
+              <View style={styles.actionNumber}>
+                <Text style={styles.actionNumberText}>
+                  01
+                </Text>
+              </View>
+              <Text style={styles.actionTitle}>
+                Browse Events
+              </Text>
+              <Text style={styles.actionArrow}>
+                {">"}
+              </Text>
+            </TouchableOpacity>
 
-      {/* Five Events */}
-      {recentEvents.map((event) => (
-        <TouchableOpacity
-          key={event.id}
-          activeOpacity={0.8}
-          onPress={() =>
-            router.push({
-              pathname: "/event/[id]",
-              params: {
-                id: event.id,
-              },
-            } as any)
-          }
-        >
-          <EventCard event={event} />
-        </TouchableOpacity>
-      ))}
+            <View style={styles.divider} />
 
-      {/* Link Example */}
-      <Link
-        href="/(tabs)/profile"
-        style={styles.profileLink}
-      >
-        Open Profile with Link
-      </Link>
-    </ScrollView>
+            <Link
+              href="/(tabs)/profile"
+              style={styles.actionLink}
+            >
+              <View style={styles.actionRow}>
+                <View style={styles.actionNumber}>
+                  <Text style={styles.actionNumberText}>
+                    02
+                  </Text>
+                </View>
+                <Text style={styles.actionTitle}>
+                  Edit Profile
+                </Text>
+                <Text style={styles.actionArrow}>
+                  {">"}
+                </Text>
+              </View>
+            </Link>
+          </View>
+
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>
+              Recent Events
+            </Text>
+            <TouchableOpacity
+              onPress={() =>
+                router.push("/(tabs)/event")
+              }
+              activeOpacity={0.7}
+            >
+              <Text style={styles.sectionLabel}>
+                VIEW ALL
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {events.map((event) => (
+            <TouchableOpacity
+              key={event.id}
+              activeOpacity={0.8}
+              onPress={() =>
+                router.push({
+                  pathname: "/event/[id]",
+                  params: {
+                    id: event.id,
+                  },
+                })
+              }
+            >
+              <EventCard
+                event={{
+                  ...event,
+                  availability:
+                    joinedEventIds.includes(event.id) ||
+                    event.availability === "Joined"
+                      ? "Joined"
+                      : event.availability,
+                }}
+              />
+            </TouchableOpacity>
+          ))}
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
-    backgroundColor: "#F5F7FB",
+    backgroundColor: "#F3EDE2",
   },
 
-  content: {
-    padding: 20,
-    paddingBottom: 40,
+  scrollContent: {
+    paddingBottom: 30,
   },
 
-  greeting: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "#1E3A8A",
+  container: {
+    width: "100%",
+    maxWidth: 760,
+    alignSelf: "center",
+    paddingHorizontal: 22,
+    paddingTop: 24,
+  },
+
+  header: {
+    backgroundColor: "#2B2118",
+    borderRadius: 24,
+    padding: 24,
+    minHeight: 170,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 28,
+  },
+
+  headerContent: {
+    flex: 1,
+  },
+
+  eyebrow: {
+    color: "#F3A847",
+    fontSize: 11,
+    fontWeight: "800",
+    letterSpacing: 1.8,
+    marginBottom: 18,
+  },
+
+  title: {
+    color: "#FFF9EF",
+    fontSize: 34,
+    fontWeight: "800",
+    marginBottom: 8,
   },
 
   subtitle: {
-    color: "#6B7280",
-    fontSize: 15,
-    marginTop: 5,
-    marginBottom: 25,
+    color: "#C9BDAE",
+    fontSize: 14,
+    fontWeight: "500",
+  },
+
+  profileButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#F3A847",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  profileLetter: {
+    color: "#2B2118",
+    fontSize: 18,
+    fontWeight: "900",
   },
 
   stats: {
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-between",
+    marginHorizontal: -5,
+    marginBottom: 26,
+  },
+
+  wideStats: {
+    justifyContent: "flex-start",
+    gap: 12,
+  },
+
+  wideStatCard: {
+    width: "23%",
+    minWidth: 150,
+    marginHorizontal: 5,
   },
 
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginTop: 25,
-    marginBottom: 15,
+    marginBottom: 12,
   },
 
   sectionTitle: {
+    color: "#2B2118",
+    fontSize: 21,
+    fontWeight: "800",
+  },
+
+  sectionLabel: {
+    color: "#968A7D",
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 1.3,
+  },
+
+  actionsCard: {
+    backgroundColor: "#FFFDF8",
+    borderRadius: 18,
+    paddingHorizontal: 18,
+    paddingVertical: 4,
+    marginBottom: 26,
+  },
+
+  actionRow: {
+    minHeight: 66,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  actionNumber: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: "#F3EDE2",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 14,
+  },
+
+  actionNumberText: {
+    color: "#C27A27",
+    fontSize: 10,
+    fontWeight: "800",
+  },
+
+  actionTitle: {
+    flex: 1,
+    color: "#2B2118",
+    fontSize: 15,
+    fontWeight: "700",
+  },
+
+  actionArrow: {
+    color: "#C27A27",
     fontSize: 20,
-    fontWeight: "bold",
-    color: "#111827",
+    fontWeight: "700",
   },
 
-  viewAll: {
-    color: "#2563EB",
+  actionLink: {
+    textDecorationLine: "none",
+  },
+
+  divider: {
+    height: 1,
+    backgroundColor: "#E8DED0",
+  },
+
+  footer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingTop: 22,
+    paddingHorizontal: 4,
+  },
+
+  footerText: {
+    color: "#968A7D",
+    fontSize: 12,
     fontWeight: "600",
   },
 
-  profileLink: {
-    color: "#2563EB",
-    fontWeight: "600",
-    textAlign: "center",
-    marginTop: 10,
-    marginBottom: 20,
+  footerVersion: {
+    color: "#B1A498",
+    fontSize: 11,
   },
 });

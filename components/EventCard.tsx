@@ -1,8 +1,8 @@
 import React from "react";
 import {
-    StyleSheet,
-    Text,
-    View,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 
 type Event = {
@@ -11,6 +11,9 @@ type Event = {
   description?: string;
   category: string;
   date: string;
+  time?: string;
+  venue?: string;
+  availability?: string;
   status: string;
 };
 
@@ -33,6 +36,12 @@ export default function EventCard({
         {event.category}
       </Text>
 
+      {event.venue && (
+        <Text style={styles.meta}>
+          {event.venue}
+        </Text>
+      )}
+
       {/* Description */}
       {event.description && (
         <Text style={styles.description}>
@@ -43,7 +52,8 @@ export default function EventCard({
       {/* Bottom Row */}
       <View style={styles.bottomRow}>
         <Text style={styles.date}>
-          Date: {event.date}
+          {event.date}
+          {event.time ? `, ${event.time}` : ""}
         </Text>
 
         <View
@@ -61,40 +71,46 @@ export default function EventCard({
           </Text>
         </View>
       </View>
+
+      {event.availability && (
+        <Text style={styles.availability}>
+          {event.availability}
+        </Text>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 15,
-    padding: 17,
+    flex: 1,
+    backgroundColor: "#FFFDF8",
+    borderRadius: 18,
+    padding: 18,
     marginBottom: 12,
-
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
+    shadowColor: "#2B2118",
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
     elevation: 2,
   },
 
   title: {
     fontSize: 17,
-    fontWeight: "bold",
-    color: "#1F2937",
-    marginBottom: 5,
+    fontWeight: "800",
+    color: "#2B2118",
+    marginBottom: 7,
   },
 
   category: {
     fontSize: 14,
-    fontWeight: "600",
-    color: "#2563EB",
+    fontWeight: "800",
+    color: "#C27A27",
     marginBottom: 7,
   },
 
   description: {
     fontSize: 14,
-    color: "#6B7280",
+    color: "#8A7D70",
     lineHeight: 20,
     marginBottom: 12,
   },
@@ -109,7 +125,7 @@ const styles = StyleSheet.create({
 
   date: {
     fontSize: 13,
-    color: "#6B7280",
+    color: "#968A7D",
     flexShrink: 1,
   },
 
@@ -120,20 +136,35 @@ const styles = StyleSheet.create({
   },
 
   completed: {
-    backgroundColor: "#DCFCE7",
+    backgroundColor: "#DDEDD5",
+  },
+
+  meta: {
+    color: "#968A7D",
+    fontSize: 13,
+    fontWeight: "700",
+    marginBottom: 8,
   },
 
   inProgress: {
-    backgroundColor: "#DBEAFE",
+    backgroundColor: "#F8D8A8",
   },
 
   upcoming: {
-    backgroundColor: "#FEF3C7",
+    backgroundColor: "#F3EDE2",
   },
 
   statusText: {
     fontSize: 12,
-    fontWeight: "700",
-    color: "#111827",
+    fontWeight: "800",
+    color: "#2B2118",
+  },
+
+  availability: {
+    color: "#C27A27",
+    fontSize: 12,
+    fontWeight: "800",
+    marginTop: 10,
+    textTransform: "uppercase",
   },
 });
